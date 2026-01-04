@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OSS Contribution Tracker</title>
+</head>
+<body>
+    <h1>Welcome to OSS Contribution Tracker</h1>
+
+    {% if user.is_authenticated %}
+        <p>Hello, {{ user.username }}</p>
+    {% else %}
+        <a href="{% url 'github_login' %}">Login with GitHub</a>
+    {% endif %}
+</body>
+</html>

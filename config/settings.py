@@ -11,6 +11,14 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os as setos
+from dotenv import load_dotenv
+
+#Load the Dotenv
+load_dotenv()
+#Add the GITHUB_CLIENT_ID & GITHUB_CLIENT_SECRET from .env (put you own GITHUB_CLIENT_ID & GITHUB_CLIENT_SECRET in .env)
+GITHUB_CLIENT_ID = setos.getenv("GITHUB_CLIENT_ID")
+GITHUB_CLIENT_SECRET = setos.getenv("GITHUB_CLIENT_SECRET")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
