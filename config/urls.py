@@ -23,7 +23,7 @@ def home(request):
     return render(request, "base.html")
 
 urlpatterns = [
-    path("", home, name="home"),   # 👈 THIS FIXES 404
+    path("", home, name="home"),
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
 ]

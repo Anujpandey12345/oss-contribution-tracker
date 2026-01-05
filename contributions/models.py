@@ -12,7 +12,7 @@ class Repository(models.Model):
     )
     name = models.CharField(max_length=255)
     full_name = models.CharField(max_length=255)
-    github_id = models.IntegerField(unique=True)
+    github_id = models.IntegerField(unique=True, null=True, blank=False)
     html_url = models.URLField()
     description = models.TextField(blank=True)
     language = models.CharField(max_length=100, blank=True)
@@ -24,6 +24,8 @@ class Repository(models.Model):
     def __str__(self):
         return self.full_name
     
+
+"""" I separated PRs and Issues because they have different lifecycle and attributes"""
 
 
 class PullRequest(models.Model):

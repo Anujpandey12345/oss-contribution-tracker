@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Repositories</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f5f5f5;
+        }
+        .repo {
+            background: white;
+            padding: 15px;
+            margin: 15px auto;
+            width: 600px;
+            border-radius: 6px;
+        }
+        .repo a {
+            font-weight: bold;
+            color: #0366d6;
+            text-decoration: none;
+        }
+        .stats {
+            font-size: 14px;
+            color: #555;
+        }
+        ul {
+            padding-left: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2 style="text-align:center;">📦 My GitHub Repositories</h2>
+
+{% if repositories %}
+    {% for repo in repositories %}
+        <div class="repo">
+            <!-- Repository info (printed ONCE) -->
+            <a href="{{ repo.html_url }}" target="_blank">
+                {{ repo.full_name }}
+            </a>
+
+            <p>{{ repo.description }}</p>
+
+            <div class="stats">
+                ⭐ {{ repo.stars }} |
+                🍴 {{ repo.forks }} |
+                🧑‍💻 {{ repo.language }}
+            </div>
+
+            <!-- Pull Requests -->
+            <h4>🔁 Pull Requests</h4>
+
+            {% if repo.pull_requests.all %}
+                <ul>
+                    {% for pr in repo.pull_requests.all %}
+                        <li>
+                            <a href="{{ pr.html_url }}" target="_blank">
+                                PR #{{ pr.number }} – {{ pr.title }}
+                            </a>
+                            ({{ pr.state }}{% if pr.merged %}, merged{% endif %})
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No PRs found.</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% else %}
+    <p style="text-align:center;">No repositories found.</p>
+{% endif %}
+
+</body>
+</html>
