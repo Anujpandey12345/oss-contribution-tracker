@@ -1,6 +1,6 @@
 import requests # Used to make HTTP requests (GET, POST) to GitHub API
 from django.conf import settings
-from django.contrib.auth import login  # Imports Django’s built-in login system
+from django.contrib.auth import login, logout  # Imports Django’s built-in login, Logout system
 from django.contrib.auth.models import User  #Imports Django’s default User model
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
@@ -52,5 +52,13 @@ def github_callback(request):
     login(request, user)
     return redirect("/")
 
+
+
+
+# For LogOut
+
+def logout_view(request):
+    logout(request)
+    return redirect("/")
 
 
