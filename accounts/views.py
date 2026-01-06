@@ -6,6 +6,8 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from contributions.models import Repository, PullRequest, Issue
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
 
 
 """GitHub Login View"""
@@ -214,6 +216,12 @@ def dashboard(request):
     pr_merged = PullRequest.objects.filter(repository__user = request.user, merged=True).count()
     issue_total = Issue.objects.filter(repository__user = request.user).count()
     issue_closed = Issue.objects.filter(repository__user = request.user, state="closed").count()
+    issue_monthly = (
+        Issue.objects.filter(repository__user = request.user).annotate(month=TruncMonth("created_at")).values("month").annotate(count=Count("id")).order_by("month")
+    )
+    pr_monthly = (
+        PullRequest.objects.filter(repository__user = request.user).annotate(month=TruncMonth("created_at")).values("month").annotate(count=Count("id")).order_by("month")
+    )
 
     context = {
         "repositories": repositories,
@@ -222,8 +230,9 @@ def dashboard(request):
         "pr_merged": pr_merged,
         "issue_total": issue_total,
         "issue_closed": issue_closed,
+        "pr_monthly": list(pr_monthly),
+        "issue_monthly": list(issue_monthly),
     }
-
     return render(request,"dashboard.html", context)
 
     

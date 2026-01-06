@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>My GitHub Dashboard</title>
     <style>
@@ -8,7 +9,8 @@
             background: #f5f5f5;
         }
 
-        .summary, .repo {
+        .summary,
+        .repo {
             background: white;
             padding: 15px;
             margin: 15px auto;
@@ -36,83 +38,193 @@
             margin-top: 15px;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
-<h2 style="text-align:center;">📊 My GitHub Contribution Dashboard</h2>
+    <h2 style="text-align:center;">📊 My GitHub Contribution Dashboard</h2>
 
-<!-- ================= SUMMARY COUNTS ================= -->
-<div class="summary">
-    <h3>📈 Contribution Summary</h3>
-    <p>📦 Repositories: <strong>{{ repo_count }}</strong></p>
-    <p>🔁 Pull Requests: <strong>{{ pr_total }}</strong>
-        (Merged: {{ pr_merged }})
-    </p>
-    <p>🐞 Issues: <strong>{{ issue_total }}</strong>
-        (Closed: {{ issue_closed }})
-    </p>
-</div>
+    <!-- ================= SUMMARY COUNTS ================= -->
+    <div class="summary">
+        <h3>📈 Contribution Summary</h3>
+        <p>📦 Repositories: <strong>{{ repo_count }}</strong></p>
+        <p>🔁 Pull Requests: <strong>{{ pr_total }}</strong>
+            (Merged: {{ pr_merged }})
+        </p>
+        <p>🐞 Issues: <strong>{{ issue_total }}</strong>
+            (Closed: {{ issue_closed }})
+        </p>
+    </div>
 
-<!-- ================= REPOSITORIES ================= -->
-{% if repositories %}
+    <!-- ================= MONTHLY ANALYTICS ================= -->
+    <div class="summary">
+        <h3>📊 Monthly Contribution Analytics</h3>
+
+        <canvas id="prChart" height="120"></canvas>
+        <br>
+        <canvas id="issueChart" height="120"></canvas>
+    </div>
+
+
+    <!-- ================= REPOSITORIES ================= -->
+    {% if repositories %}
     {% for repo in repositories %}
-        <div class="repo">
+    <div class="repo">
 
-            <!-- Repository info -->
-            <a href="{{ repo.html_url }}" target="_blank">
-                {{ repo.full_name }}
-            </a>
+        <!-- Repository info -->
+        <a href="{{ repo.html_url }}" target="_blank">
+            {{ repo.full_name }}
+        </a>
 
-            {% if repo.description %}
-                <p>{{ repo.description }}</p>
-            {% endif %}
+        {% if repo.description %}
+        <p>{{ repo.description }}</p>
+        {% endif %}
 
-            <div class="stats">
-                ⭐ {{ repo.stars|default:0 }} |
-                🍴 {{ repo.forks|default:0 }} |
-                🧑‍💻 {{ repo.language|default:"N/A" }}
-            </div>
-
-            <!-- Issues -->
-            <h4>🐞 Issues ({{ repo.issues.count }})</h4>
-            {% if repo.issues.exists %}
-                <ul>
-                    {% for issue in repo.issues.all %}
-                        <li>
-                            <a href="{{ issue.html_url }}" target="_blank">
-                                Issue #{{ issue.number }} – {{ issue.title }}
-                            </a>
-                            ({{ issue.state }})
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>No issues found.</p>
-            {% endif %}
-
-            <!-- Pull Requests -->
-            <h4>🔁 Pull Requests ({{ repo.pull_requests.count }})</h4>
-            {% if repo.pull_requests.exists %}
-                <ul>
-                    {% for pr in repo.pull_requests.all %}
-                        <li>
-                            <a href="{{ pr.html_url }}" target="_blank">
-                                PR #{{ pr.number }} – {{ pr.title }}
-                            </a>
-                            ({{ pr.state }}{% if pr.merged %}, merged{% endif %})
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>No PRs found.</p>
-            {% endif %}
-
+        <div class="stats">
+            ⭐ {{ repo.stars|default:0 }} |
+            🍴 {{ repo.forks|default:0 }} |
+            🧑‍💻 {{ repo.language|default:"N/A" }}
         </div>
+
+        <!-- Issues -->
+        <h4>🐞 Issues ({{ repo.issues.count }})</h4>
+        {% if repo.issues.exists %}
+        <ul>
+            {% for issue in repo.issues.all %}
+            <li>
+                <a href="{{ issue.html_url }}" target="_blank">
+                    Issue #{{ issue.number }} – {{ issue.title }}
+                </a>
+                ({{ issue.state }})
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No issues found.</p>
+        {% endif %}
+
+        <!-- Pull Requests -->
+        <h4>🔁 Pull Requests ({{ repo.pull_requests.count }})</h4>
+        {% if repo.pull_requests.exists %}
+        <ul>
+            {% for pr in repo.pull_requests.all %}
+            <li>
+                <a href="{{ pr.html_url }}" target="_blank">
+                    PR #{{ pr.number }} – {{ pr.title }}
+                </a>
+                ({{ pr.state }}{% if pr.merged %}, merged{% endif %})
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No PRs found.</p>
+        {% endif %}
+
+    </div>
     {% endfor %}
-{% else %}
+    {% else %}
     <p style="text-align:center;">No repositories found.</p>
-{% endif %}
+    {% endif %}
+    {{ pr_monthly|json_script:"pr-data" }}
+    {{ issue_monthly|json_script:"issue-data" }}
+    <script>
+        // ✅ Safely read Django data as JSON
+        const prData = JSON.parse(
+            document.getElementById("pr-data").textContent
+        );
+        const issueData = JSON.parse(
+            document.getElementById("issue-data").textContent
+        );
+
+        // ================= PR DATA =================
+        const prLabels = prData.map(item =>
+            new Date(item.month).toLocaleString('default', {
+                month: 'short',
+                year: 'numeric'
+            })
+        );
+        const prCounts = prData.map(item => item.count);
+
+        // ================= ISSUE DATA =================
+        const issueLabels = issueData.map(item =>
+            new Date(item.month).toLocaleString('default', {
+                month: 'short',
+                year: 'numeric'
+            })
+        );
+        const issueCounts = issueData.map(item => item.count);
+
+        // ================= PR LINE CHART =================
+        new Chart(document.getElementById('prChart'), {
+            type: 'line',
+            data: {
+                labels: prLabels,
+                datasets: [{
+                    label: 'Pull Requests',
+                    data: prCounts,
+                    borderColor: '#2563eb',               // blue
+                    backgroundColor: 'rgba(37, 99, 235, 0.3)',
+                    borderWidth: 2,
+                    pointRadius: 6,                       // 🔹 FIX: visible dot
+                    pointHoverRadius: 8,
+                    tension: 0.3,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+
+        // ================= ISSUE BAR CHART =================
+        new Chart(document.getElementById('issueChart'), {
+            type: 'bar',
+            data: {
+                labels: issueLabels,
+                datasets: [{
+                    label: 'Issues',
+                    data: issueCounts,
+                    backgroundColor: 'rgba(255, 0, 0, 0.6)',  // green
+                    borderColor: '##000000',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+
+
 
 </body>
+
 </html>
