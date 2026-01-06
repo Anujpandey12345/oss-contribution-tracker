@@ -8,6 +8,12 @@ from django.contrib.auth.decorators import login_required
 from contributions.models import Repository, PullRequest, Issue
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
+from django.core.cache import cache
+from accounts.services.github_service  import github_get
+from accounts.services.analytics_service import (
+    get_monthly_issue,
+    get_monthly_prs,
+)
 
 
 """GitHub Login View"""
@@ -205,23 +211,47 @@ def fetch_global_issues(request):
 
 
 
+
+
+
 @login_required
 def dashboard(request):
     repositories = Repository.objects.all().prefetch_related("issues", "pull_requests")
-    
 
-    #stats
-    repo_count = repositories.count()
-    pr_total = PullRequest.objects.filter(repository__user = request.user).count()
-    pr_merged = PullRequest.objects.filter(repository__user = request.user, merged=True).count()
-    issue_total = Issue.objects.filter(repository__user = request.user).count()
-    issue_closed = Issue.objects.filter(repository__user = request.user, state="closed").count()
-    issue_monthly = (
-        Issue.objects.filter(repository__user = request.user).annotate(month=TruncMonth("created_at")).values("month").annotate(count=Count("id")).order_by("month")
-    )
-    pr_monthly = (
-        PullRequest.objects.filter(repository__user = request.user).annotate(month=TruncMonth("created_at")).values("month").annotate(count=Count("id")).order_by("month")
-    )
+    cache_key = f"dashboard_stats_user_{request.user.id}"  # Each user must have separate cache.
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        repo_count = cached_data["repo_count"]
+        pr_total = cached_data["pr_total"]
+        pr_merged = cached_data["pr_merged"]
+        issue_total = cached_data["issue_total"]
+        issue_closed = cached_data["issue_closed"]
+        issue_monthly = cached_data["issue_monthly"]
+        pr_monthly = cached_data["pr_monthly"]
+    else:
+        #stats
+        repo_count = repositories.count()
+        pr_total = PullRequest.objects.filter(repository__user = request.user).count()
+        pr_merged = PullRequest.objects.filter(repository__user = request.user, merged=True).count()
+        issue_total = Issue.objects.filter(repository__user = request.user).count()
+        issue_closed = Issue.objects.filter(repository__user = request.user, state="closed").count()
+        # 🔥 SERVICE CALLS
+        issue_monthly = get_monthly_issue(request.user)
+        pr_monthly = get_monthly_prs(request.user)
+
+        cache.set(
+            cache_key,
+            {
+                "repo_count": repo_count,
+                "pr_total": pr_total,
+                "pr_merged": pr_merged,
+                "issue_total": issue_total,
+                "issue_closed": issue_closed,
+                "issue_monthly": issue_monthly,
+                "pr_monthly": pr_monthly, 
+            },
+            timeout=300 # 5 min
+        )
 
     context = {
         "repositories": repositories,
