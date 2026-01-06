@@ -56,6 +56,9 @@ class Issue(models.Model):
     state = models.CharField(max_length=20)
     html_url = models.URLField()
     created_at = models.DateTimeField()
+    class Meta:
+        unique_together = ("repository", "number")   # Issue numbers repeat across repos , (repo + issue number) is unique
 
+        
     def __str__(self):
         return f"Issue #{self.number} - {self.title}"

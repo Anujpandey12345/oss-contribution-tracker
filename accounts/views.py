@@ -5,7 +5,7 @@ from django.contrib.auth.models import User  #Imports Django’s default User mo
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from contributions.models import Repository, PullRequest
+from contributions.models import Repository, PullRequest, Issue
 
 
 """GitHub Login View"""
@@ -17,8 +17,16 @@ def github_login(request):
     return redirect(github_auth_url)
 
 
-"""GitHub Callback Logic"""
+# For LogOut
+def logout_view(request):
+    logout(request)
+    return redirect("/")
 
+
+
+
+
+"""GitHub Callback Logic"""
 
 def github_callback(request):
     code = request.GET.get("code") # A temporary authorization code which is send by github after user approves access
@@ -92,8 +100,6 @@ def fetch_repositories(request):
         )
     return redirect("/")
 
-
-
 @login_required
 def fetch_global_pull_requests(request):
     token = request.session.get("github_token")
@@ -128,6 +134,9 @@ def fetch_global_pull_requests(request):
                 "html_url": f"https://github.com/{repo_full_name}",
             },
         )
+        if repo.user is None:
+            repo.user = request.user
+            repo.save()
         PullRequest.objects.update_or_create(
             repository=repo,
             number=pr["number"],
@@ -142,20 +151,82 @@ def fetch_global_pull_requests(request):
     return redirect("/accounts/dashboard/")
 
 
+@login_required
+def fetch_global_issues(request):
+    token = request.session.get("github_token")   # Reads GitHub access token stored during login
+
+    if not token:
+        return redirect("/")
+    
+    username = request.user.username
+    search_url = (
+        f"https://api.github.com/search/issues"
+        f"?q=involves:{username}+type:pr"        #Invloves is use for Any issue or pull request where the user is involved in ANY way
+    )
+    response = requests.get(
+        search_url,
+        headers = {
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github+json",
+        },
+    )
+    dataI = response.json()
+    items = dataI.get("items", [])
+
+
+    for issue in items:
+        repo_full_name = issue["repository_url"].split("repos/")[-1]
+        repo, created = Repository.objects.get_or_create(
+            full_name = repo_full_name,
+            defaults={
+                "user": request.user,
+                "name": repo_full_name.split("/")[-1],
+                "html_url": f"https://github.com/{repo_full_name}",
+            },
+        )
+        if repo.user is None:
+            repo.user = request.user
+            repo.save()
+        Issue.objects.update_or_create(
+            repository = repo,
+            number = issue["number"],
+            defaults = {
+                "title": issue["title"],
+                "state": issue["state"],
+                "html_url": issue["html_url"],
+                "created_at": issue["created_at"],
+            },
+        )
+    return redirect("/accounts/dashboard/")
+
+
+
+
 
 @login_required
 def dashboard(request):
-    Repositories = Repository.objects.filter(user=request.user).prefetch_related("pull_requests")
-    return render (request, "dashboard.html", {
-        "repositories": Repositories
-    })
+    repositories = Repository.objects.all().prefetch_related("issues", "pull_requests")
+    
 
+    #stats
+    repo_count = repositories.count()
+    pr_total = PullRequest.objects.filter(repository__user = request.user).count()
+    pr_merged = PullRequest.objects.filter(repository__user = request.user, merged=True).count()
+    issue_total = Issue.objects.filter(repository__user = request.user).count()
+    issue_closed = Issue.objects.filter(repository__user = request.user, state="closed").count()
 
+    context = {
+        "repositories": repositories,
+        "repo_count": repo_count,
+        "pr_total": pr_total,
+        "pr_merged": pr_merged,
+        "issue_total": issue_total,
+        "issue_closed": issue_closed,
+    }
 
-# For LogOut
+    return render(request,"dashboard.html", context)
 
-def logout_view(request):
-    logout(request)
-    return redirect("/")
+    
+
 
 

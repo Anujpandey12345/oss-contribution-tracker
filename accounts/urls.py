@@ -9,5 +9,6 @@ urlpatterns=[
     path("fetch/", views.fetch_repositories, name="fetch_repositories"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("fetch-global-prs/", views.fetch_global_pull_requests,name="fetch_global_pull_requests",),
+    path("fetch-global-issues/", views.fetch_global_issues, name="fetch_global_issues"),
 
 ]
