@@ -12,10 +12,12 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os as setos
-from dotenv import load_dotenv
 
-#Load the Dotenv
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 #Add the GITHUB_CLIENT_ID & GITHUB_CLIENT_SECRET from .env (put you own GITHUB_CLIENT_ID & GITHUB_CLIENT_SECRET in .env)
 GITHUB_CLIENT_ID = setos.getenv("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET = setos.getenv("GITHUB_CLIENT_SECRET")
@@ -28,12 +30,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = setos.getenv("SECRET_KEY")
+SECRET_KEY = setos.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = setos.getenv("DEBUG")
 
 ALLOWED_HOSTS = ["*"]
+
 
 # Application definition
 
@@ -126,8 +129,6 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
 
 
 
