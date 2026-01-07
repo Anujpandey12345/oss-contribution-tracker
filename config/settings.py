@@ -33,7 +33,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = setos.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = setos.getenv("DEBUG")
+DEBUG = "django-insecure-+#x4l$hspj%y)61&r5r3ntcn1f5)x84fn^ng%(v9now1fd@ba3"
 
 ALLOWED_HOSTS = ["*"]
 
