@@ -28,10 +28,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-+#x4l$hspj%y)61&r5r3ntcn1f5)x84fn^ng%(v9now1fd@ba3"
+SECRET_KEY = setos.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = setos.getenv("DEBUG")
 
 ALLOWED_HOSTS = []
 
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     #Local Apps
     "accounts",
     "contributions",
+    "celery"
 ]
 
 MIDDLEWARE = [
@@ -138,3 +139,8 @@ CACHES = {
     }
 }
 
+
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_TIMEZONE = "Asia/Kolkata"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"

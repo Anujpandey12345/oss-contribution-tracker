@@ -16,6 +16,11 @@ from accounts.services.analytics_service import (
 )
 
 
+
+# For celery we import task.py
+from accounts.celery.tasks import fetch_repos
+
+
 """GitHub Login View"""
 def github_login(request):
     github_auth_url = (
@@ -70,6 +75,10 @@ def github_callback(request):
         defaults={"email":email}
     )
     login(request, user)
+    fetch_repos.delay(
+        user.id,
+        request.session.get("github_token")
+    )
     return redirect("/")
 
 
@@ -264,8 +273,3 @@ def dashboard(request):
         "issue_monthly": list(issue_monthly),
     }
     return render(request,"dashboard.html", context)
-
-    
-
-
-
