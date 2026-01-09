@@ -141,6 +141,8 @@ CACHES = {
 
 
 
-CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+# CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"  Celery  broker
+CELERY_BROKER_URL = "amqp://guest:guest@127.0.0.1:5672//" # RabbitMQ broker
+
 CELERY_TIMEZONE = "Asia/Kolkata"
 CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
