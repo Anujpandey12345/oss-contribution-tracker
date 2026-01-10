@@ -1,106 +1,293 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OSS Contribution Tracker</title>
+    <link rel="icon" href="{% static 'admin/favicon.ico' %}">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.34/dist/lenis.min.js"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    
     <style>
+        :root {
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --text-main: #000000;
+            --text-muted: #555555;
+            --border-color: #000000;
+            --btn-bg: #000000;
+            --btn-text: #ffffff;
+            --shadow: 0 10px 30px rgba(0,0,0,0.08);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark-mode {
+            --bg-color: #0a0a0a;
+            --card-bg: #111111;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --border-color: #333333;
+            --btn-bg: #ffffff;
+            --btn-text: #000000;
+            --shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-        }
-
-        .chat-box {
-            width: 420px;
-            margin: 80px auto;
-            background: white;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            transition: var(--transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
             padding: 20px;
-            border-radius: 8px;
+            overflow-x: hidden;
         }
 
+        /* Responsive Container */
+        .chat-container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            padding: clamp(20px, 6vw, 40px);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            /* FIX: Prevents any text from going out of bounds */
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            position: relative;
+        }
+
+        /* 3D Model Styling */
+        .model-box {
+            width: 100%;
+            height: 220px;
+            margin-bottom: 10px;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            outline: none;
+        }
+
+        .header h1 {
+            font-size: clamp(1.1rem, 5vw, 1.5rem);
+            font-weight: 800;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        /* Message Box */
         .msg {
-            margin-bottom: 12px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            text-align: left;
         }
 
-        .bot {
-            color: #444;
-        }
-
-        .user {
-            text-align: right;
-            color: #0066cc;
-        }
-
-        a {
+        /* Buttons & Links */
+        .action-link {
+            display: block;
             text-decoration: none;
-            color: #0066cc;
-            font-weight: bold;
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1.5px solid var(--border-color);
+            padding: 14px 20px;
+            margin: 10px 0;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .action-link:hover {
+            background: var(--text-main);
+            color: var(--bg-color);
+            transform: translateY(-2px);
+        }
+
+        .github-btn {
+            background: var(--btn-bg) !important;
+            color: var(--btn-text) !important;
+            border: none;
+            font-weight: 800;
+        }
+
+        .logout-btn {
+            border-style: dashed;
+            margin-top: 25px;
+            color: #ff4444;
+            border-color: #ff4444;
+        }
+
+        .logout-btn:hover {
+            background: #ff4444 !important;
+            color: #fff !important;
+        }
+
+        /* Theme Toggle */
+        .theme-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 50px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-link:hover { color: var(--text-main); }
+
+        /* Responsive Adjustments */
+        @media (max-width: 400px) {
+            .chat-container { padding: 20px; }
+            .header h1 { font-size: 1.1rem; }
         }
     </style>
 </head>
 
 <body>
 
-    <div class="chat-box">
+    <button class="theme-switch" onclick="toggleTheme()" id="t-btn">Dark Mode</button>
+
+    <div class="chat-container">
+        <div class="model-box">
+            <model-viewer 
+                id="bot-model"
+                src="https://modelviewer.dev/shared-assets/models/RobotExpressive.glb" 
+                alt="Pointing Robot"
+                camera-controls 
+                autoplay
+                shadow-intensity="1"
+                animation-name="Wave" 
+                disable-zoom
+                auto-rotate-delay="0"
+                camera-orbit="0deg 75deg 105%">
+            </model-viewer>
+        </div>
+
+        <div class="header">
+            <h1>🚀 Contribution Tracker</h1>
+        </div>
 
         {% if user.is_authenticated %}
-        <div class="msg bot">
-            👋 Hello <b>{{ user.username }}</b>
+        <div class="msg">
+            👋 Hello <b>{{ user.username }}</b>!<br>
+            Welcome back. I've prepared your dashboard updates below.
         </div>
 
-        <div class="msg bot">
-            Welcome to OSS Contribution Tracker.
-        </div>
-
-        <div class="msg bot">
-            What would you like to do?
-        </div>
-
-        <div class="msg user">
-            View my contributions
-        </div>
-
-        <div class="msg bot">
-            🚧 Feature coming soon…
-        </div>
-
-        <div class="msg bot">
-            <a href="{% url 'logout' %}">Logout</a>
+        <div class="actions-group">
+            <a href="{% url 'fetch_repositories' %}" class="action-link">🔄 Fetch GitHub Repos</a>
+            <a href="{% url 'dashboard' %}" class="action-link">📂 View My Repositories</a>
+            <a href="{% url 'fetch_global_pull_requests' %}" class="action-link">🖇️ Fetch Open Source PRs</a>
+            <a href="{% url 'fetch_global_issues' %}" class="action-link">🚩 Fetch Open Source Issues</a>
+            
+            <a href="{% url 'logout' %}" class="action-link logout-btn">Logout Account</a>
         </div>
 
         {% else %}
-        <div class="msg bot">
-            👋 Hello! Please login to continue.
+        <div class="msg">
+            👋 <b>Welcome!</b><br>
+            Track your open-source journey. Please login with your GitHub account to continue.
         </div>
 
-        <div class="msg user">
+        <a href="{% url 'github_login' %}" class="action-link github-btn">
             Login with GitHub
-        </div>
-
-        <div class="msg bot">
-            <a href="{% url 'github_login' %}">Login with GitHub</a>
-        </div>
+        </a>
         {% endif %}
 
-        <div class="msg user">
-            <a href="{% url 'fetch_repositories' %}">Fetch my GitHub repositories</a>
-        </div>
-        <div class="msg user">
-            <a href="{% url 'dashboard' %}">Show my repositories</a>
-        </div>
-        <div class="msg user">
-            <a href="{% url 'fetch_global_pull_requests' %}">
-                Fetch my open-source PRs
-            </a>
-            <div class="msg user">
-            <a href="{% url 'fetch_global_issues' %}">
-                Fetch my open-source Issues
-            </a>
-        </div>
-        <a href="https://github.com/Anujpandey12345">github</a>
-
-
-
+        <a href="https://github.com/Anujpandey12345" class="footer-link" target="_blank">
+            Follow Anujpandey12345
+        </a>
     </div>
+
+    <script>
+        // 1. Initialize Lenis (Smooth Scroll)
+        const lenis = new Lenis();
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // 2. Dark/Light Mode
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('t-btn');
+            const isDark = body.classList.toggle('dark-mode');
+            
+            localStorage.setItem('pref-theme', isDark ? 'dark' : 'light');
+            btn.innerText = isDark ? 'Light Mode' : 'Dark Mode';
+        }
+
+        // Persistence
+        if (localStorage.getItem('pref-theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('t-btn').innerText = 'Light Mode';
+        }
+
+        // 3. 3D Model Logic
+        const modelViewer = document.getElementById('bot-model');
+
+        // Safely set animation name on a <model-viewer> element.
+        function setModelAnimation(name) {
+            if (!modelViewer) return;
+            try {
+                // prefer the property if available
+                if ('animationName' in modelViewer) modelViewer.animationName = name;
+                else modelViewer.setAttribute('animation-name', name);
+            } catch (e) {
+                // Last-resort fallback to attribute
+                modelViewer.setAttribute('animation-name', name);
+            }
+        }
+
+        // Choose the animation based on authentication server-side flag
+        const preferredAnimation = `{% if user.is_authenticated %}ThumbsUp{% else %}Wave{% endif %}`;
+
+        // Apply when model is ready; guard if element is missing
+        if (modelViewer && typeof modelViewer.addEventListener === 'function') {
+            modelViewer.addEventListener('load', () => setModelAnimation(preferredAnimation));
+        } else {
+            // Fallback: apply after DOM is ready
+            document.addEventListener('DOMContentLoaded', () => setModelAnimation(preferredAnimation));
+        }
+    </script>
 </body>
 
 </html>
