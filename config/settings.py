@@ -32,7 +32,6 @@ SECRET_KEY = setos.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = setos.getenv("DEBUG")
-
 ALLOWED_HOSTS = []
 
 

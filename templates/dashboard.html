@@ -1,225 +1,381 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en" data-theme="light">
 
 <head>
-    <title>My GitHub Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSS Dashboard | Analytics</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+
     <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --header-bg: rgba(255, 255, 255, 0.8);
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --primary-accent: #2563eb;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #020617;
+            --card-bg: #1e293b;
+            --header-bg: rgba(2, 6, 23, 0.8);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --primary-accent: #38bdf8;
+            --border-color: #334155;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background 0.3s ease, color 0.3s ease, border 0.3s ease;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
         }
 
-        .summary,
-        .repo {
-            background: white;
-            padding: 15px;
-            margin: 15px auto;
-            width: 600px;
-            border-radius: 6px;
+        /* Lenis Smoothness */
+        html.lenis { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto !important; }
+
+        /* Background Canvas */
+        #three-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.5;
         }
 
-        .repo a {
-            font-weight: bold;
-            color: #0366d6;
-            text-decoration: none;
+        /* Layout */
+        .container {
+            width: min(90%, 1100px);
+            margin: 0 auto;
+            padding-bottom: 80px;
         }
 
-        .stats {
-            font-size: 14px;
-            color: #555;
-            margin: 6px 0;
+        header {
+            padding: 30px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--header-bg);
+            backdrop-filter: blur(12px);
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        ul {
-            padding-left: 20px;
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
         }
 
-        h4 {
-            margin-top: 15px;
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); transition: 0.3s; }
+
+        .stat-group { margin-bottom: 12px; }
+        .stat-group:last-child { margin-bottom: 0; }
+        
+        .label { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
+        .value { font-size: 1.5rem; font-weight: 700; color: var(--primary-accent); }
+
+        /* Charts */
+        .chart-card { margin-bottom: 40px; padding: 30px; }
+
+        /* Repositories Section */
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .repo-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .repo-header {
+            padding: 20px 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .repo-name { font-weight: 700; color: var(--primary-accent); font-size: 1.1rem; }
+        .repo-badges { display: flex; gap: 12px; color: var(--text-secondary); font-size: 0.9rem; }
+
+        .repo-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        [data-theme="dark"] .repo-content { background: rgba(255, 255, 255, 0.02); }
+
+        .repo-content.active {
+            max-height: 2000px;
+            padding: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* List Items */
+        .data-list { list-style: none; margin-top: 16px; }
+        .data-list li {
+            padding: 12px 16px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .data-list a { text-decoration: none; color: var(--text-primary); font-weight: 500; }
+        .data-list a:hover { color: var(--primary-accent); }
+
+        .badge-status {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .open { background: #dcfce7; color: #166534; }
+        .closed { background: #fee2e2; color: #991b1b; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { width: 95%; }
+            .repo-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .value { font-size: 1.25rem; }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
-    <h2 style="text-align:center;">📊 My GitHub Contribution Dashboard</h2>
+    <canvas id="three-canvas"></canvas>
 
-    <!-- ================= SUMMARY COUNTS ================= -->
-    <div class="summary">
-        <h3>📈 Contribution Summary</h3>
-        <p>📦 Repositories: <strong>{{ repo_count }}</strong></p>
-        <p>🔁 Pull Requests: <strong>{{ pr_total }}</strong>
-            (Merged: {{ pr_merged }})
-        </p>
-        <p>🐞 Issues: <strong>{{ issue_total }}</strong>
-            (Closed: {{ issue_closed }})
-        </p>
-    </div>
+    <div class="container">
+        <header>
+            <h2 class="logo"><i class="fa-brands fa-github"></i> OpenSource Lens</h2>
+            <button id="theme-toggle" class="card" style="padding: 10px 15px; cursor: pointer;">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        </header>
 
-    <!-- ================= MONTHLY ANALYTICS ================= -->
-    <div class="summary">
-        <h3>📊 Monthly Contribution Analytics</h3>
-
-        <canvas id="prChart" height="120"></canvas>
-        <br>
-        <canvas id="issueChart" height="120"></canvas>
-    </div>
-
-
-    <!-- ================= REPOSITORIES ================= -->
-    {% if repositories %}
-    {% for repo in repositories %}
-    <div class="repo">
-
-        <!-- Repository info -->
-        <a href="{{ repo.html_url }}" target="_blank">
-            {{ repo.full_name }}
-        </a>
-
-        {% if repo.description %}
-        <p>{{ repo.description }}</p>
-        {% endif %}
-
-        <div class="stats">
-            ⭐ {{ repo.stars|default:0 }} |
-            🍴 {{ repo.forks|default:0 }} |
-            🧑‍💻 {{ repo.language|default:"N/A" }}
+        <div class="summary-grid">
+            <div class="card">
+                <div class="stat-group">
+                    <div class="label">Total Repositories</div>
+                    <div class="value">{{ repo_count }}</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="stat-group">
+                    <div class="label">Pull Requests</div>
+                    <div class="value">{{ pr_total }} <span style="font-size: 0.9rem; font-weight: 400; opacity: 0.7;">({{ pr_merged }} merged)</span></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="stat-group">
+                    <div class="label">Issues Tracked</div>
+                    <div class="value">{{ issue_total }} <span style="font-size: 0.9rem; font-weight: 400; opacity: 0.7;">({{ issue_closed }} closed)</span></div>
+                </div>
+            </div>
         </div>
 
-        <!-- Issues -->
-        <h4>🐞 Issues ({{ repo.issues.count }})</h4>
-        {% if repo.issues.exists %}
-        <ul>
-            {% for issue in repo.issues.all %}
-            <li>
-                <a href="{{ issue.html_url }}" target="_blank">
-                    Issue #{{ issue.number }} – {{ issue.title }}
-                </a>
-                ({{ issue.state }})
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p>No issues found.</p>
-        {% endif %}
+        <div class="card chart-card">
+            <h3 style="margin-bottom: 25px;">📉 Activity Trend</h3>
+            <canvas id="prChart" height="100"></canvas>
+            <div style="height: 40px;"></div>
+            <canvas id="issueChart" height="100"></canvas>
+        </div>
 
-        <!-- Pull Requests -->
-        <h4>🔁 Pull Requests ({{ repo.pull_requests.count }})</h4>
-        {% if repo.pull_requests.exists %}
-        <ul>
-            {% for pr in repo.pull_requests.all %}
-            <li>
-                <a href="{{ pr.html_url }}" target="_blank">
-                    PR #{{ pr.number }} – {{ pr.title }}
-                </a>
-                ({{ pr.state }}{% if pr.merged %}, merged{% endif %})
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p>No PRs found.</p>
-        {% endif %}
+        <h3 class="section-title"><i class="fa-solid fa-boxes-stacked"></i> Repository Explorer</h3>
 
+        {% if repositories %}
+        {% for repo in repositories %}
+        <div class="repo-item">
+            <div class="repo-header" onclick="toggleAccordion(this)">
+                <div class="repo-name">{{ repo.full_name }}</div>
+                <div class="repo-badges">
+                    <span><i class="fa-regular fa-star"></i> {{ repo.stars|default:0 }}</span>
+                    <span><i class="fa-solid fa-code"></i> {{ repo.language|default:"N/A" }}</span>
+                    <i class="fa-solid fa-chevron-down toggle-icon"></i>
+                </div>
+            </div>
+            <div class="repo-content">
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">{{ repo.description|default:"No description provided." }}</p>
+
+                <h4 style="font-size: 0.95rem; margin-top: 20px;">🐞 Issues</h4>
+                <ul class="data-list">
+                    {% for issue in repo.issues.all %}
+                    <li>
+                        <a href="{{ issue.html_url }}" target="_blank">#{{ issue.number }} {{ issue.title|truncatechars:50 }}</a>
+                        <span class="badge-status {{ issue.state }}">{{ issue.state }}</span>
+                    </li>
+                    {% empty %}
+                    <li style="color: var(--text-secondary);">No issues found.</li>
+                    {% endfor %}
+                </ul>
+
+                <h4 style="font-size: 0.95rem; margin-top: 20px;">🔁 Pull Requests</h4>
+                <ul class="data-list">
+                    {% for pr in repo.pull_requests.all %}
+                    <li>
+                        <a href="{{ pr.html_url }}" target="_blank">#{{ pr.number }} {{ pr.title|truncatechars:50 }}</a>
+                        <span class="badge-status {% if pr.merged %}open{% else %}{{ pr.state }}{% endif %}">
+                            {% if pr.merged %}merged{% else %}{{ pr.state }}{% endif %}
+                        </span>
+                    </li>
+                    {% empty %}
+                    <li style="color: var(--text-secondary);">No PRs found.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="text-align: center; padding: 40px; color: var(--text-secondary);">No projects found.</p>
+        {% endif %}
     </div>
-    {% endfor %}
-    {% else %}
-    <p style="text-align:center;">No repositories found.</p>
-    {% endif %}
+
     {{ pr_monthly|json_script:"pr-data" }}
     {{ issue_monthly|json_script:"issue-data" }}
+
     <script>
-        // ✅ Safely read Django data as JSON
-        const prData = JSON.parse(
-            document.getElementById("pr-data").textContent
-        );
-        const issueData = JSON.parse(
-            document.getElementById("issue-data").textContent
-        );
+        // 1. LENIS SMOOTH SCROLL
+        const lenis = new Lenis();
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
 
-        // ================= PR DATA =================
-        const prLabels = prData.map(item =>
-            new Date(item.month).toLocaleString('default', {
-                month: 'short',
-                year: 'numeric'
-            })
-        );
-        const prCounts = prData.map(item => item.count);
+        // 2. THREE.JS BACKGROUND
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
 
-        // ================= ISSUE DATA =================
-        const issueLabels = issueData.map(item =>
-            new Date(item.month).toLocaleString('default', {
-                month: 'short',
-                year: 'numeric'
-            })
-        );
-        const issueCounts = issueData.map(item => item.count);
+        const geo = new THREE.TorusKnotGeometry(10, 3, 100, 16);
+        const mat = new THREE.MeshBasicMaterial({ color: 0x2563eb, wireframe: true, transparent: true, opacity: 0.1 });
+        const knot = new THREE.Mesh(geo, mat);
+        scene.add(knot);
+        camera.position.z = 30;
 
-        // ================= PR LINE CHART =================
-        new Chart(document.getElementById('prChart'), {
-            type: 'line',
-            data: {
-                labels: prLabels,
-                datasets: [{
-                    label: 'Pull Requests',
-                    data: prCounts,
-                    borderColor: '#2563eb',               // blue
-                    backgroundColor: 'rgba(37, 99, 235, 0.3)',
-                    borderWidth: 2,
-                    pointRadius: 6,                       // 🔹 FIX: visible dot
-                    pointHoverRadius: 8,
-                    tension: 0.3,
-                    fill: false
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: true
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            knot.rotation.x += 0.001;
+            knot.rotation.y += 0.001;
+            renderer.render(scene, camera);
+        }
+        animate3D();
+
+        // 3. THEME TOGGLE
+        const btn = document.getElementById('theme-toggle');
+        btn.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            const target = current === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', target);
+            btn.innerHTML = target === 'light' ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
+            knot.material.color.setHex(target === 'light' ? 0x2563eb : 0x38bdf8);
         });
 
-        // ================= ISSUE BAR CHART =================
-        new Chart(document.getElementById('issueChart'), {
-            type: 'bar',
-            data: {
-                labels: issueLabels,
-                datasets: [{
-                    label: 'Issues',
-                    data: issueCounts,
-                    backgroundColor: 'rgba(255, 0, 0, 0.6)',  // green
-                    borderColor: '##000000',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: true
-                    }
+        // 4. ACCORDION
+        function toggleAccordion(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.toggle-icon');
+            
+            // Close others
+            document.querySelectorAll('.repo-content').forEach(c => {
+                if (c !== content) {
+                    c.classList.remove('active');
+                    c.previousElementSibling.querySelector('.toggle-icon').style.transform = 'rotate(0deg)';
+                }
+            });
+
+            content.classList.toggle('active');
+            icon.style.transform = content.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        // 5. CHART.JS
+        const prDataRaw = JSON.parse(document.getElementById('pr-data').textContent);
+        const issueDataRaw = JSON.parse(document.getElementById('issue-data').textContent);
+
+        const createChart = (id, label, data, color) => {
+            new Chart(document.getElementById(id), {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.month),
+                    datasets: [{
+                        label: label,
+                        data: data.map(d => d.count),
+                        borderColor: color,
+                        backgroundColor: color + '22',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 4
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                        y: { beginAtZero: true, grid: { borderDash: [5, 5] }, ticks: { color: '#94a3b8', stepSize: 1 } }
                     }
                 }
-            }
-        });
+            });
+        };
+
+        createChart('prChart', 'Pull Requests', prDataRaw, '#2563eb');
+        createChart('issueChart', 'Issues', issueDataRaw, '#ef4444');
     </script>
 </body>
 
