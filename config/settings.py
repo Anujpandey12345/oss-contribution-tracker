@@ -28,10 +28,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = setos.getenv("SECRET_KEY")
+# SECRET_KEY = setos.getenv("SECRET_KEY")
+SECRET_KEY = "django-insecure-local-dev-key-123"
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = setos.getenv("DEBUG")
+# DEBUG = bool(os.getenv("DEBUG", "False"))
+# DEBUG = setos.getenv("DEBUG",False)
+DEBUG  = True
+
 ALLOWED_HOSTS = []
 
 
@@ -145,3 +150,6 @@ CELERY_BROKER_URL = "amqp://guest:guest@127.0.0.1:5672//" # RabbitMQ broker
 
 CELERY_TIMEZONE = "Asia/Kolkata"
 CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+
+
+GITHUB_URL = "https://github.com/Anujpandey12345/oss-contribution-tracker"

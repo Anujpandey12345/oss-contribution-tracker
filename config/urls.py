@@ -18,9 +18,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import render
+from django.conf import settings   
 
 def home(request):
-    return render(request, "base.html")
+    return render(request, "base.html", {  
+        "github_url": settings.GITHUB_URL
+    })
 
 urlpatterns = [
     path("", home, name="home"),
